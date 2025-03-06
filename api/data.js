@@ -10,36 +10,31 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 module.exports = async (req, res) => {
-  // 设置 CORS 头
-  res.setHeader('Access-Control-Allow-Origin', '*'); // 允许所有来源，或改为 'https://bike-tracker-frontend.netlify.app'
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  // 只处理 POST 请求
-  if (req.method !== 'POST') {
+  if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
 
   try {
-    const { weekId, ...data } = req.body;
-    if (!weekId) {
-      return res.status(400).json({ error: 'Missing weekId' });
-    }
-    if (weekId === 'attendanceBonus') {
-      await db.collection('attendance_bonus').doc('current').set({ value: data.value });
-    } else {
-      await db.collection('weekly_data').doc(weekId).set(data);
-    }
-    res.status(200).json({ message: 'Data saved' });
+    const weeklySnapshot = await db.collection('weekly_data').get();
+    const weeklyData = weeklySnapshot.docs.map(doc => ({ weekId: doc.id, ...doc.data() }));
+
+    const bonusSnapshot = await db.collection('attendance_bonus').doc('current').get();
+    const bonusData = bonusSnapshot.exists ? { weekId: 'attendanceBonus', value: bonusSnapshot.data().value } : { weekId: 'attendanceBonus', value: 20 };
+
+    const allData = [...weeklyData, bonusData];
+    res.status(200).json(allData);
   } catch (error) {
-    console.error('Error saving data:', error);
+    console.error('Error fetching data:', error);
     res.status(500).json({ error: error.message });
   }
 };
