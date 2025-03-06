@@ -7,9 +7,9 @@
     }
   ],
   "routes": [
-    { "src": "/api/data", "methods": ["GET"], "dest": "/api/data.js" },
-    { "src": "/api/save", "methods": ["POST"], "dest": "/api/save.js" },
-    { "src": "/api/delete", "methods": ["POST"], "dest": "/api/delete.js" },
-    { "src": "/api/upload-image", "methods": ["POST"], "dest": "/api/upload-image.js" }
+    { "src": "/api/data", "methods": ["GET", "OPTIONS"], "dest": "/api/data.js" },
+    { "src": "/api/save", "methods": ["POST", "OPTIONS"], "dest": "/api/save.js" },
+    { "src": "/api/delete", "methods": ["POST", "OPTIONS"], "dest": "/api/delete.js" },
+    { "src": "/api/upload-image", "methods": ["POST", "OPTIONS"], "dest": "/api/upload-image.js" }
   ]
 }
