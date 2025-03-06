@@ -9,37 +9,40 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+const parseBody = (req) => {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', () => resolve(body ? JSON.parse(body) : {}));
+    req.on('error', reject);
+  });
+};
+
 module.exports = async (req, res) => {
-  // 设置 CORS 头
-  res.setHeader('Access-Control-Allow-Origin', '*'); // 允许所有来源，或改为 'https://bike-tracker-frontend.netlify.app'
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  // 只处理 POST 请求
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
 
   try {
-    const { weekId, ...data } = req.body;
+    const body = await parseBody(req);
+    const { weekId } = body;
     if (!weekId) {
       return res.status(400).json({ error: 'Missing weekId' });
     }
-    if (weekId === 'attendanceBonus') {
-      await db.collection('attendance_bonus').doc('current').set({ value: data.value });
-    } else {
-      await db.collection('weekly_data').doc(weekId).set(data);
-    }
-    res.status(200).json({ message: 'Data saved' });
+    await db.collection('weekly_data').doc(weekId).delete();
+    res.status(200).json({ message: 'Week deleted' });
   } catch (error) {
-    console.error('Error saving data:', error);
+    console.error('Error deleting data:', error);
     res.status(500).json({ error: error.message });
   }
 };
