@@ -19,12 +19,10 @@ const parseBody = (req) => {
 };
 
 module.exports = async (req, res) => {
-  // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
