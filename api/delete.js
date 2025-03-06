@@ -9,40 +9,32 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-const parseBody = (req) => {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => body += chunk.toString());
-    req.on('end', () => resolve(body ? JSON.parse(body) : {}));
-    req.on('error', reject);
-  });
-};
-
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  if (req.method !== 'POST') {
+  if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
 
   try {
-    const body = await parseBody(req);
-    const { weekId } = body;
-    if (!weekId) {
-      return res.status(400).json({ error: 'Missing weekId' });
-    }
-    await db.collection('weekly_data').doc(weekId).delete();
-    res.status(200).json({ message: 'Week deleted' });
+    const weeklySnapshot = await db.collection('weekly_data').get();
+    const weeklyData = weeklySnapshot.docs.map(doc => ({ weekId: doc.id, ...doc.data() }));
+
+    const bonusSnapshot = await db.collection('attendance_bonus').doc('current').get();
+    const bonusData = bonusSnapshot.exists ? { weekId: 'attendanceBonus', value: bonusSnapshot.data().value } : { weekId: 'attendanceBonus', value: 20 };
+
+    const allData = [...weeklyData, bonusData];
+    res.status(200).json(allData);
   } catch (error) {
-    console.error('Error deleting data:', error);
+    console.error('Error fetching data:', error);
     res.status(500).json({ error: error.message });
   }
 };
