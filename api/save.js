@@ -9,29 +9,22 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// 手动解析请求体的辅助函数
 const parseBody = (req) => {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(error);
-      }
-    });
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', () => resolve(body ? JSON.parse(body) : {}));
     req.on('error', reject);
   });
 };
 
 module.exports = async (req, res) => {
+  // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+  // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -43,7 +36,6 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 解析请求体
     const body = await parseBody(req);
     const { weekId, ...data } = body;
 
