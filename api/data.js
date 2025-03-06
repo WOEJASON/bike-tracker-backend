@@ -1,5 +1,4 @@
 const admin = require('firebase-admin');
-const cors = require('cors')({ origin: true }); // 启用 CORS，允许所有来源
 require('dotenv').config();
 
 if (!admin.apps.length) {
@@ -10,20 +9,30 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-module.exports = (req, res) => {
-  cors(req, res, async () => {
-    try {
-      const weeklySnapshot = await db.collection('weekly_data').get();
-      const weeklyData = weeklySnapshot.docs.map(doc => ({ weekId: doc.id, ...doc.data() }));
+module.exports = async (req, res) => {
+  // 手动添加 CORS 头
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-      const bonusSnapshot = await db.collection('attendance_bonus').doc('current').get();
-      const bonusData = bonusSnapshot.exists ? { weekId: 'attendanceBonus', value: bonusSnapshot.data().value } : { weekId: 'attendanceBonus', value: 20 };
+  // 处理 OPTIONS 预检请求
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-      const allData = [...weeklyData, bonusData];
-      res.status(200).json(allData);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      res.status(500).json({ error: error.message });
+  try {
+    const { weekId, ...data } = req.body;
+    if (!weekId) {
+      return res.status(400).json({ error: 'Missing weekId' });
     }
-  });
+    if (weekId === 'attendanceBonus') {
+      await db.collection('attendance_bonus').doc('current').set({ value: data.value });
+    } else {
+      await db.collection('weekly_data').doc(weekId).set(data);
+    }
+    res.status(200).json({ message: 'Data saved' });
+  } catch (error) {
+    console.error('Error saving data:', error);
+    res.status(500).json({ error: error.message });
+  }
 };
