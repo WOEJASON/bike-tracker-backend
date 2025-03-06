@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/data", "methods": ["GET"], "dest": "/api/data.js" },
+    { "src": "/api/save", "methods": ["POST"], "dest": "/api/save.js" },
+    { "src": "/api/delete", "methods": ["POST"], "dest": "/api/delete.js" },
+    { "src": "/api/upload-image", "methods": ["POST"], "dest": "/api/upload-image.js" }
+  ]
+}
