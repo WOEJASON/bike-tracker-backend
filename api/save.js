@@ -9,6 +9,24 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+// 手动解析请求体的辅助函数
+const parseBody = (req) => {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
+  });
+};
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -25,7 +43,10 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { weekId, ...data } = req.body;
+    // 解析请求体
+    const body = await parseBody(req);
+    const { weekId, ...data } = body;
+
     if (!weekId) {
       return res.status(400).json({ error: 'Missing weekId' });
     }
